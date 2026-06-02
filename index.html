@@ -155,10 +155,11 @@
 
     <!-- LÓGICA JAVASCRIPT -->
     <script>
-        // 🔴 PEGA TU LINK DE SHEETDB ACÁ 🔴
         const SHEETDB_URL = "https://sheetdb.io/api/v1/zju3ai6vw34cs";
 
-        // Función para pedir contraseña
+        // Diccionario para convertir el texto del mes a número para el calendario
+        const MESES_NUM = { "ENE": "01", "FEB": "02", "MAR": "03", "ABR": "04", "MAY": "05", "JUN": "06", "JUL": "07", "AGO": "08", "SEP": "09", "OCT": "10", "NOV": "11", "DIC": "12" };
+
         function verificarCodigo() {
             let codigo = prompt("Solo personal autorizado. Ingrese el código:");
             if (codigo === "1112") {
@@ -168,9 +169,34 @@
             }
         }
 
-        // Función para cerrar el panel
         function cerrarPanel() {
             document.getElementById('panel-admin').classList.add('hidden');
+        }
+
+        // ==========================================
+        // NUEVA FUNCIÓN: CREAR LINK DE GOOGLE CALENDAR
+        // ==========================================
+        function generarLinkCalendario(evento) {
+            const mesText = evento.Mes ? evento.Mes.trim().toUpperCase() : "ENE";
+            const mesNum = MESES_NUM[mesText] || "01";
+            const diaNum = String(evento.Dia).padStart(2, '0'); // Asegura que el día tenga 2 dígitos
+
+            // Convierte "10:30" a "103000" (formato que pide Google)
+            let horaLimpia = "000000";
+            if (evento.Hora && evento.Hora.includes(':')) {
+                horaLimpia = evento.Hora.replace(':', '') + "00";
+            }
+
+            // Año 2026 fijo (podés cambiarlo cuando pasen de año)
+            const fechaGoogle = `2026${mesNum}${diaNum}T${horaLimpia}`;
+
+            // Codificamos los textos para que no se rompa la URL con los espacios
+            const titulo = encodeURIComponent("Centro de Estudiantes: " + evento.Titulo);
+            const detalles = encodeURIComponent(evento.Temario);
+            const lugar = encodeURIComponent(evento.Lugar + ", EPET 6");
+
+            // Retornamos el enlace mágico
+            return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titulo}&dates=${fechaGoogle}/${fechaGoogle}&details=${detalles}&location=${lugar}`;
         }
 
         // ==========================================
@@ -182,33 +208,43 @@
 
             try {
                 const respuesta = await fetch(SHEETDB_URL);
-                const eventos = await respuesta.json(); // SheetDB devuelve un array JSON
+                const eventos = await respuesta.json();
 
-                contenedor.innerHTML = ''; // Limpiamos el "Cargando..."
+                contenedor.innerHTML = '';
 
                 if (eventos.length === 0) {
                     contenedor.innerHTML = '<p class="text-center text-gray-500 py-10">No hay eventos programados por ahora.</p>';
                     return;
                 }
 
-                // Recorremos los eventos y los mostramos al revés (para ver el último que agregaste primero)
                 eventos.reverse().forEach(evento => {
-                    // Verificar que no sea una fila vacía
                     if (evento.Titulo && evento.Titulo.trim() !== '') {
+
+                        // ACÁ ESTÁ EL BOTÓN NUEVO DEL CALENDARIO
+                        const linkCalendar = generarLinkCalendario(evento);
+
                         const tarjeta = `
-                    <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-lista-azul slide-up flex gap-4 mb-4">
-                        <div class="flex flex-col items-center justify-center bg-blue-50 text-lista-azul rounded-lg p-3 min-w-[70px]">
-                            <span class="text-sm font-bold uppercase">${evento.Mes}</span>
-                            <span class="text-2xl font-black">${evento.Dia}</span>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-lg font-bold text-gray-900">${evento.Titulo}</h3>
-                            <p class="text-gray-600 text-sm mt-1"><i class="fa-solid fa-clock mr-1 text-gray-400"></i> ${evento.Hora} hs</p>
-                            <p class="text-gray-600 text-sm"><i class="fa-solid fa-location-dot mr-1 text-gray-400"></i> ${evento.Lugar}</p>
-                            <div class="mt-3 bg-gray-50 p-3 rounded border border-gray-100">
-                                <p class="text-gray-700 text-sm font-semibold mb-1">Temario:</p>
-                                <p class="text-gray-500 text-sm">${evento.Temario}</p>
+                    <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-lista-azul slide-up flex flex-col gap-4 mb-4">
+                        <div class="flex gap-4">
+                            <div class="flex flex-col items-center justify-center bg-blue-50 text-lista-azul rounded-lg p-3 min-w-[70px] h-fit">
+                                <span class="text-sm font-bold uppercase">${evento.Mes}</span>
+                                <span class="text-2xl font-black">${evento.Dia}</span>
                             </div>
+                            <div class="flex-1">
+                                <h3 class="text-lg font-bold text-gray-900">${evento.Titulo}</h3>
+                                <p class="text-gray-600 text-sm mt-1"><i class="fa-solid fa-clock mr-1 text-gray-400"></i> ${evento.Hora} hs</p>
+                                <p class="text-gray-600 text-sm"><i class="fa-solid fa-location-dot mr-1 text-gray-400"></i> ${evento.Lugar}</p>
+                                <div class="mt-3 bg-gray-50 p-3 rounded border border-gray-100">
+                                    <p class="text-gray-700 text-sm font-semibold mb-1">Temario:</p>
+                                    <p class="text-gray-500 text-sm">${evento.Temario}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="border-t border-gray-100 pt-3">
+                            <a href="${linkCalendar}" target="_blank" class="w-full flex justify-center items-center bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold py-2 px-4 border border-gray-200 rounded-lg shadow-sm transition-all text-sm">
+                                <i class="fa-regular fa-calendar-plus text-lista-azul mr-2 text-lg"></i> Agendar Recordatorio
+                            </a>
                         </div>
                     </div>
                     `;
@@ -230,7 +266,6 @@
 
             const btnSubmit = document.querySelector('#form-evento button[type="submit"]');
 
-            // Creamos el objeto exactamente con los mismos nombres que las columnas del Excel
             const nuevoEvento = {
                 Mes: document.getElementById('ev-mes').value,
                 Dia: document.getElementById('ev-dia').value,
@@ -240,30 +275,25 @@
                 Temario: document.getElementById('ev-temario').value
             };
 
-            // Ponemos el botón en "Cargando"
             btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Guardando...';
             btnSubmit.disabled = true;
 
             try {
-                // Mandamos los datos a SheetDB usando POST
                 const respuesta = await fetch(SHEETDB_URL, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json'
                     },
-                    // SheetDB pide que mandemos el objeto adentro de una propiedad "data"
                     body: JSON.stringify({
                         data: [nuevoEvento]
                     })
                 });
 
                 if (respuesta.ok) {
-                    // Si salió todo bien: vaciar formulario, cerrar panel y recargar eventos
                     document.getElementById('form-evento').reset();
                     cerrarPanel();
                     cargarEventos();
-                    alert("¡El evento se guardó en la base de datos oficial!");
                 } else {
                     alert("Error de conexión al guardar el evento.");
                 }
@@ -272,13 +302,11 @@
                 alert("Error general. Revisá tu conexión a internet.");
                 console.error(error);
             } finally {
-                // Restaurar botón
                 btnSubmit.innerHTML = '<i class="fa-solid fa-plus mr-2"></i> Publicar Evento';
                 btnSubmit.disabled = false;
             }
         });
 
-        // Ejecutar al entrar a la página por primera vez
         cargarEventos();
     </script>
 </body>
