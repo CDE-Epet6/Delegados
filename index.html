@@ -61,9 +61,9 @@
                     <p class="text-xs text-blue-400 font-semibold tracking-wider">LISTA AZUL - EPET 6</p>
                 </div>
             </div>
-            <i onclick="verificarCodigo()"
-                class="fa-solid fa-user-tie text-2xl text-blue-400 cursor-pointer hover:text-white transition-colors"
-                title="Acceso Admin"></i>
+            <i onclick="abrirCreador()"
+                class="fa-solid fa-plus-circle text-2xl text-blue-400 cursor-pointer hover:text-white transition-colors"
+                title="Nuevo Evento"></i>
         </div>
     </header>
 
@@ -72,8 +72,8 @@
         <section id="panel-admin"
             class="hidden fade-in mb-8 bg-blue-50 p-6 rounded-xl border-2 border-lista-azul shadow-md">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-lg text-lista-azul"><i class="fa-solid fa-lock-open mr-2"></i>Crear Nuevo
-                    Evento</h3>
+                <h3 id="titulo-panel" class="font-bold text-lg text-lista-azul"><i
+                        class="fa-solid fa-lock-open mr-2"></i>Crear Nuevo Evento</h3>
                 <button onclick="cerrarPanel()" class="text-gray-500 hover:text-red-500"><i
                         class="fa-solid fa-xmark text-xl"></i></button>
             </div>
@@ -93,20 +93,20 @@
                             <option value="Julio">Julio</option>
                             <option value="Agosto">Agosto</option>
                             <option value="Septiembre">Septiembre</option>
-                            <option value="Octubre" selected>Octubre</option>
+                            <option value="Octubre">Octubre</option>
                             <option value="Noviembre">Noviembre</option>
                             <option value="Diciembre">Diciembre</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">DÍA (Ej: 15)</label>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">DÍA</label>
                         <input type="number" id="ev-dia" required
                             class="w-full border rounded p-2 outline-none focus:border-lista-azul" min="1" max="31">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-700 mb-1">HORA (Ej: 10:30)</label>
-                        <input type="time" id="ev-hora" required
-                            class="w-full border rounded p-2 outline-none focus:border-lista-azul">
+                        <input type="text" id="ev-hora" required
+                            class="w-full border rounded p-2 outline-none focus:border-lista-azul" placeholder="00:00">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-700 mb-1">LUGAR</label>
@@ -117,15 +117,14 @@
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">TÍTULO DEL EVENTO</label>
                     <input type="text" id="ev-titulo" required
-                        class="w-full border rounded p-2 outline-none focus:border-lista-azul"
-                        placeholder="Ej: Asamblea General">
+                        class="w-full border rounded p-2 outline-none focus:border-lista-azul">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">TEMARIO / DESCRIPCIÓN</label>
                     <textarea id="ev-temario" required rows="2"
                         class="w-full border rounded p-2 outline-none focus:border-lista-azul resize-none"></textarea>
                 </div>
-                <button type="submit"
+                <button type="submit" id="btn-submit-panel"
                     class="w-full bg-lista-azul hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition-colors">
                     <i class="fa-solid fa-plus mr-2"></i> Publicar Evento
                 </button>
@@ -150,17 +149,54 @@
         const SHEETDB_URL = "https://sheetdb.io/api/v1/zju3ai6vw34cs";
         let eventosGlobales = [];
 
-        function verificarCodigo() {
+        // Variable para saber si estamos creando o editando
+        let eventoEditandoId = null;
+
+        // ==========================================
+        // FUNCIONES DEL PANEL
+        // ==========================================
+        function abrirCreador() {
             let codigo = prompt("Solo personal autorizado. Ingrese el código:");
             if (codigo === "1112") {
+                eventoEditandoId = null; // Modo creación
+                document.getElementById('form-evento').reset();
+                document.getElementById('titulo-panel').innerHTML = '<i class="fa-solid fa-calendar-plus mr-2"></i>Crear Nuevo Evento';
+                document.getElementById('btn-submit-panel').innerHTML = '<i class="fa-solid fa-plus mr-2"></i>Publicar Evento';
                 document.getElementById('panel-admin').classList.remove('hidden');
+                window.scrollTo(0, 0);
             } else if (codigo !== null) {
-                alert("Código incorrecto. Acceso denegado.");
+                alert("Código incorrecto.");
+            }
+        }
+
+        function abrirEditor(index) {
+            let codigo = prompt("Código de administrador para editar:");
+            if (codigo === "1112") {
+                const evento = eventosGlobales[index];
+                eventoEditandoId = evento.id; // Modo edición
+
+                // Llenar el formulario con los datos actuales
+                document.getElementById('ev-mes').value = evento.Mes;
+                document.getElementById('ev-dia').value = evento.Dia;
+                document.getElementById('ev-hora').value = evento.Hora;
+                document.getElementById('ev-lugar').value = evento.Lugar;
+                document.getElementById('ev-titulo').value = evento.Titulo;
+                document.getElementById('ev-temario').value = evento.Temario;
+
+                // Cambiar textos del panel
+                document.getElementById('titulo-panel').innerHTML = '<i class="fa-solid fa-pen mr-2"></i>Editar Evento';
+                document.getElementById('btn-submit-panel').innerHTML = '<i class="fa-solid fa-save mr-2"></i>Guardar Cambios';
+
+                document.getElementById('panel-admin').classList.remove('hidden');
+                window.scrollTo(0, 0); // Sube la pantalla arriba de todo
+            } else if (codigo !== null) {
+                alert("Código incorrecto.");
             }
         }
 
         function cerrarPanel() {
             document.getElementById('panel-admin').classList.add('hidden');
+            eventoEditandoId = null;
         }
 
         // ==========================================
@@ -210,44 +246,31 @@
         // BORRAR UN EVENTO
         // ==========================================
         async function borrarEvento(id) {
-            let codigo = prompt("Para borrar este evento, ingrese el código de administrador:");
-            if (codigo !== "1112") {
-                if (codigo !== null) alert("Código incorrecto. Acción cancelada.");
-                return;
-            }
+            let codigo = prompt("Código de administrador para borrar:");
+            if (codigo !== "1112") return;
+            if (!confirm("¿Seguro que querés borrar este evento?")) return;
 
-            if (!confirm("¿Estás seguro que querés borrar este evento definitivamente?")) {
-                return;
-            }
-
-            // Cambiamos el cursor para mostrar que está cargando
             document.body.style.cursor = 'wait';
-
             try {
-                // SheetDB usa esta estructura para borrar por un valor de columna (en este caso, por 'id')
-                const urlBorrar = `${SHEETDB_URL}/id/${id}`;
-                const respuesta = await fetch(urlBorrar, { method: 'DELETE' });
-
+                const respuesta = await fetch(`${SHEETDB_URL}/id/${id}`, { method: 'DELETE' });
                 if (respuesta.ok) {
-                    alert("Evento borrado con éxito.");
-                    cargarEventos(); // Recargamos la lista
+                    cargarEventos();
                 } else {
-                    alert("Hubo un error al intentar borrar el evento.");
+                    alert("Hubo un error al borrar.");
                 }
             } catch (error) {
-                alert("Error de conexión al borrar.");
-                console.error(error);
+                alert("Error de conexión.");
             } finally {
                 document.body.style.cursor = 'default';
             }
         }
 
         // ==========================================
-        // OBTENER LOS EVENTOS DE LA BASE
+        // CARGAR EVENTOS
         // ==========================================
         async function cargarEventos() {
             const contenedor = document.getElementById('contenedor-eventos');
-            contenedor.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-lista-azul"></i><p class="text-gray-500">Cargando agenda oficial...</p></div>';
+            contenedor.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-lista-azul"></i><p class="text-gray-500">Cargando agenda...</p></div>';
 
             try {
                 const respuesta = await fetch(SHEETDB_URL);
@@ -256,8 +279,8 @@
                 contenedor.innerHTML = '';
                 eventosGlobales = [];
 
-                if (eventos.length === 0) {
-                    contenedor.innerHTML = '<p class="text-center text-gray-500 py-10">No hay eventos programados por ahora.</p>';
+                if (eventos.length === 0 || eventos.error) {
+                    contenedor.innerHTML = '<p class="text-center text-gray-500 py-10">No hay eventos programados.</p>';
                     return;
                 }
 
@@ -270,11 +293,17 @@
                         const tarjeta = `
                         <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-lista-azul slide-up flex flex-col gap-4 mb-4 relative">
                             
-                            <button onclick="borrarEvento('${evento.id}')" class="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition-colors" title="Borrar evento">
-                                <i class="fa-solid fa-trash text-lg"></i>
-                            </button>
+                            <div class="absolute top-3 right-3 flex gap-3">
+                                <button onclick="abrirEditor(${arrayIndex})" class="text-gray-300 hover:text-blue-500 transition-colors" title="Editar evento">
+                                    <i class="fa-solid fa-pen text-lg"></i>
+                                </button>
+                                <button onclick="borrarEvento('${evento.id}')" class="text-gray-300 hover:text-red-500 transition-colors" title="Borrar evento">
+                                    <i class="fa-solid fa-trash text-lg"></i>
+                                </button>
+                            </div>
 
-                            <div class="flex gap-4 pr-6"> <div class="flex flex-col items-center justify-center bg-blue-50 text-lista-azul rounded-lg p-3 min-w-[70px] h-fit">
+                            <div class="flex gap-4 pr-16">
+                                <div class="flex flex-col items-center justify-center bg-blue-50 text-lista-azul rounded-lg p-3 min-w-[70px] h-fit">
                                     <span class="text-xs font-bold uppercase tracking-wider">${evento.Mes.substring(0, 3)}</span>
                                     <span class="text-2xl font-black">${evento.Dia}</span>
                                 </div>
@@ -284,7 +313,7 @@
                                     <p class="text-gray-600 text-sm"><i class="fa-solid fa-location-dot mr-1 text-gray-400"></i> ${evento.Lugar}</p>
                                     <div class="mt-3 bg-gray-50 p-3 rounded border border-gray-100">
                                         <p class="text-gray-700 text-sm font-semibold mb-1">Temario:</p>
-                                        <p class="text-gray-500 text-sm">${evento.Temario}</p>
+                                        <p class="text-gray-500 text-sm whitespace-pre-wrap">${evento.Temario}</p>
                                     </div>
                                 </div>
                             </div>
@@ -301,24 +330,19 @@
                 });
 
             } catch (error) {
-                contenedor.innerHTML = '<p class="text-center text-red-500 py-10">Hubo un error al conectar con la base de datos.</p>';
-                console.error("Error obteniendo datos:", error);
+                contenedor.innerHTML = '<p class="text-center text-red-500 py-10">Hubo un error al conectar con la base.</p>';
             }
         }
 
         // ==========================================
-        // GUARDAR UN EVENTO NUEVO
+        // GUARDAR (CREAR O EDITAR)
         // ==========================================
         document.getElementById('form-evento').addEventListener('submit', async function (e) {
             e.preventDefault();
+            const btnSubmit = document.getElementById('btn-submit-panel');
 
-            const btnSubmit = document.querySelector('#form-evento button[type="submit"]');
-
-            // Generamos un ID único usando la fecha y hora exacta (DNI del evento)
-            const idUnico = "EV-" + Date.now();
-
-            const nuevoEvento = {
-                id: idUnico,  // <--- Acá se guarda el ID en el Excel
+            // Recolectar datos del formulario
+            const datosEvento = {
                 Mes: document.getElementById('ev-mes').value,
                 Dia: document.getElementById('ev-dia').value,
                 Hora: document.getElementById('ev-hora').value,
@@ -331,35 +355,41 @@
             btnSubmit.disabled = true;
 
             try {
-                const respuesta = await fetch(SHEETDB_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        data: [nuevoEvento]
-                    })
-                });
-
-                if (respuesta.ok) {
-                    document.getElementById('form-evento').reset();
-                    cerrarPanel();
-                    cargarEventos();
+                if (eventoEditandoId) {
+                    // MODO EDICIÓN (PATCH)
+                    const respuesta = await fetch(`${SHEETDB_URL}/id/${eventoEditandoId}`, {
+                        method: 'PATCH',
+                        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ data: datosEvento })
+                    });
+                    if (respuesta.ok) {
+                        cerrarPanel();
+                        cargarEventos();
+                    } else {
+                        alert("Error al editar el evento.");
+                    }
                 } else {
-                    alert("Error de conexión al guardar el evento.");
+                    // MODO CREACIÓN (POST)
+                    datosEvento.id = "EV-" + Date.now(); // Generar DNI nuevo
+                    const respuesta = await fetch(SHEETDB_URL, {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ data: [datosEvento] })
+                    });
+                    if (respuesta.ok) {
+                        cerrarPanel();
+                        cargarEventos();
+                    } else {
+                        alert("Error al crear el evento.");
+                    }
                 }
-
             } catch (error) {
-                alert("Error general. Revisá tu conexión a internet.");
-                console.error(error);
+                alert("Error de conexión al guardar.");
             } finally {
-                btnSubmit.innerHTML = '<i class="fa-solid fa-plus mr-2"></i> Publicar Evento';
                 btnSubmit.disabled = false;
             }
         });
 
-        // Ejecutar al entrar
         cargarEventos();
     </script>
 </body>
