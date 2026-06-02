@@ -51,7 +51,6 @@
 
 <body class="bg-gray-50 text-gray-800 font-sans antialiased flex flex-col min-h-screen">
 
-    <!-- Navegación Superior -->
     <header class="bg-gray-900 text-white shadow-md sticky top-0 z-50">
         <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-3">
@@ -62,7 +61,6 @@
                     <p class="text-xs text-blue-400 font-semibold tracking-wider">LISTA AZUL - EPET 6</p>
                 </div>
             </div>
-            <!-- Botón Secreto (Ícono) -->
             <i onclick="verificarCodigo()"
                 class="fa-solid fa-user-tie text-2xl text-blue-400 cursor-pointer hover:text-white transition-colors"
                 title="Acceso Admin"></i>
@@ -71,7 +69,6 @@
 
     <main class="flex-grow max-w-4xl mx-auto w-full px-4 py-8">
 
-        <!-- ================= PANEL DE ADMINISTRADOR (OCULTO POR DEFECTO) ================= -->
         <section id="panel-admin"
             class="hidden fade-in mb-8 bg-blue-50 p-6 rounded-xl border-2 border-lista-azul shadow-md">
             <div class="flex justify-between items-center mb-4">
@@ -84,15 +81,27 @@
             <form id="form-evento" class="space-y-4">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">MES (Ej: OCT)</label>
-                        <input type="text" id="ev-mes" required
-                            class="w-full border rounded p-2 outline-none focus:border-lista-azul uppercase"
-                            maxlength="3">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">MES</label>
+                        <select id="ev-mes" required
+                            class="w-full border rounded p-2 outline-none focus:border-lista-azul uppercase bg-white">
+                            <option value="Enero">Enero</option>
+                            <option value="Febrero">Febrero</option>
+                            <option value="Marzo">Marzo</option>
+                            <option value="Abril">Abril</option>
+                            <option value="Mayo">Mayo</option>
+                            <option value="Junio">Junio</option>
+                            <option value="Julio">Julio</option>
+                            <option value="Agosto">Agosto</option>
+                            <option value="Septiembre">Septiembre</option>
+                            <option value="Octubre" selected>Octubre</option>
+                            <option value="Noviembre">Noviembre</option>
+                            <option value="Diciembre">Diciembre</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-700 mb-1">DÍA (Ej: 15)</label>
                         <input type="number" id="ev-dia" required
-                            class="w-full border rounded p-2 outline-none focus:border-lista-azul">
+                            class="w-full border rounded p-2 outline-none focus:border-lista-azul" min="1" max="31">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-700 mb-1">HORA (Ej: 10:30)</label>
@@ -123,27 +132,11 @@
             </form>
         </section>
 
-        <!-- ================= LISTA DE EVENTOS ================= -->
         <div class="flex justify-between items-center mb-6 border-b-2 border-gray-200 pb-2">
             <h2 class="text-2xl font-bold text-gray-800">Agenda Oficial</h2>
         </div>
 
         <section id="contenedor-eventos" class="space-y-4">
-            <!-- Evento de ejemplo por defecto -->
-            <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-lista-azul slide-up flex gap-4">
-                <div
-                    class="flex flex-col items-center justify-center bg-blue-50 text-lista-azul rounded-lg p-3 min-w-[70px]">
-                    <span class="text-sm font-bold uppercase">OCT</span>
-                    <span class="text-2xl font-black">15</span>
-                </div>
-                <div class="flex-1">
-                    <h3 class="text-lg font-bold text-gray-900">Reunión de Prueba</h3>
-                    <p class="text-gray-600 text-sm mt-1"><i class="fa-solid fa-clock mr-1 text-gray-400"></i> 10:30 hs
-                    </p>
-                    <p class="text-gray-600 text-sm"><i class="fa-solid fa-location-dot mr-1 text-gray-400"></i>
-                        Biblioteca</p>
-                </div>
-            </div>
         </section>
     </main>
 
@@ -153,11 +146,8 @@
         </div>
     </footer>
 
-    <!-- LÓGICA JAVASCRIPT -->
     <script>
         const SHEETDB_URL = "https://sheetdb.io/api/v1/zju3ai6vw34cs";
-
-        // Variable para guardar los eventos y usarlos en el botón
         let eventosGlobales = [];
 
         function verificarCodigo() {
@@ -174,46 +164,37 @@
         }
 
         // ==========================================
-        // NUEVA LÓGICA: GENERADOR DE ARCHIVO .ICS (UNIVERSAL)
+        // DESCARGAR CALENDARIO (.ICS)
         // ==========================================
         function descargarICS(index) {
             const evento = eventosGlobales[index];
-            const MESES_NUM = { "ENE": "01", "FEB": "02", "MAR": "03", "ABR": "04", "MAY": "05", "JUN": "06", "JUL": "07", "AGO": "08", "SEP": "09", "OCT": "10", "NOV": "11", "DIC": "12" };
+            const MESES_NUM = { "ENERO": "01", "FEBRERO": "02", "MARZO": "03", "ABRIL": "04", "MAYO": "05", "JUNIO": "06", "JULIO": "07", "AGOSTO": "08", "SEPTIEMBRE": "09", "OCTUBRE": "10", "NOVIEMBRE": "11", "DICIEMBRE": "12" };
 
-            const mesText = evento.Mes ? evento.Mes.trim().toUpperCase() : "ENE";
+            const mesText = evento.Mes ? evento.Mes.trim().toUpperCase() : "ENERO";
             const mesNum = MESES_NUM[mesText] || "01";
             const diaNum = evento.Dia;
 
-            // Separamos la hora y los minutos
             let horaStr = evento.Hora || "00:00";
             if (!horaStr.includes(':')) horaStr = "00:00";
             let [h, m] = horaStr.split(':');
 
-            // Creamos las fechas exactas (asumiendo año 2026 y sumando 1 hora de duración)
             const fechaInicio = new Date(2026, parseInt(mesNum) - 1, parseInt(diaNum), parseInt(h), parseInt(m));
-            const fechaFin = new Date(fechaInicio.getTime() + (60 * 60 * 1000)); // +1 hora
+            const fechaFin = new Date(fechaInicio.getTime() + (60 * 60 * 1000));
 
-            // Función para dar formato al texto que pide el calendario
             const formatoICS = (fecha) => {
                 const pad = (n) => String(n).padStart(2, '0');
                 return `${fecha.getFullYear()}${pad(fecha.getMonth() + 1)}${pad(fecha.getDate())}T${pad(fecha.getHours())}${pad(fecha.getMinutes())}00`;
             };
 
-            // Armamos el "código" del calendario
             const icsMSG =
-                "BEGIN:VCALENDAR\n" +
-                "VERSION:2.0\n" +
-                "PRODID:-//EPET6//CentroEstudiantes//ES\n" +
-                "BEGIN:VEVENT\n" +
+                "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//EPET6//CentroEstudiantes//ES\nBEGIN:VEVENT\n" +
                 "DTSTART:" + formatoICS(fechaInicio) + "\n" +
                 "DTEND:" + formatoICS(fechaFin) + "\n" +
                 "SUMMARY:EPET 6: " + evento.Titulo + "\n" +
                 "DESCRIPTION:" + evento.Temario.replace(/\n/g, '\\n') + "\n" +
                 "LOCATION:" + evento.Lugar + "\n" +
-                "END:VEVENT\n" +
-                "END:VCALENDAR";
+                "END:VEVENT\nEND:VCALENDAR";
 
-            // Forzamos la descarga del archivo en el celular
             const blob = new Blob([icsMSG], { type: 'text/calendar;charset=utf-8' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -226,7 +207,43 @@
         }
 
         // ==========================================
-        // 1. OBTENER LOS EVENTOS DE LA BASE DE DATOS
+        // BORRAR UN EVENTO
+        // ==========================================
+        async function borrarEvento(id) {
+            let codigo = prompt("Para borrar este evento, ingrese el código de administrador:");
+            if (codigo !== "1112") {
+                if (codigo !== null) alert("Código incorrecto. Acción cancelada.");
+                return;
+            }
+
+            if (!confirm("¿Estás seguro que querés borrar este evento definitivamente?")) {
+                return;
+            }
+
+            // Cambiamos el cursor para mostrar que está cargando
+            document.body.style.cursor = 'wait';
+
+            try {
+                // SheetDB usa esta estructura para borrar por un valor de columna (en este caso, por 'id')
+                const urlBorrar = `${SHEETDB_URL}/id/${id}`;
+                const respuesta = await fetch(urlBorrar, { method: 'DELETE' });
+
+                if (respuesta.ok) {
+                    alert("Evento borrado con éxito.");
+                    cargarEventos(); // Recargamos la lista
+                } else {
+                    alert("Hubo un error al intentar borrar el evento.");
+                }
+            } catch (error) {
+                alert("Error de conexión al borrar.");
+                console.error(error);
+            } finally {
+                document.body.style.cursor = 'default';
+            }
+        }
+
+        // ==========================================
+        // OBTENER LOS EVENTOS DE LA BASE
         // ==========================================
         async function cargarEventos() {
             const contenedor = document.getElementById('contenedor-eventos');
@@ -237,7 +254,7 @@
                 const eventos = await respuesta.json();
 
                 contenedor.innerHTML = '';
-                eventosGlobales = []; // Reiniciamos la lista de eventos
+                eventosGlobales = [];
 
                 if (eventos.length === 0) {
                     contenedor.innerHTML = '<p class="text-center text-gray-500 py-10">No hay eventos programados por ahora.</p>';
@@ -247,15 +264,18 @@
                 eventos.reverse().forEach(evento => {
                     if (evento.Titulo && evento.Titulo.trim() !== '') {
 
-                        // Guardamos el evento y sacamos su número de orden
                         eventosGlobales.push(evento);
                         const arrayIndex = eventosGlobales.length - 1;
 
                         const tarjeta = `
-                        <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-lista-azul slide-up flex flex-col gap-4 mb-4">
-                            <div class="flex gap-4">
-                                <div class="flex flex-col items-center justify-center bg-blue-50 text-lista-azul rounded-lg p-3 min-w-[70px] h-fit">
-                                    <span class="text-sm font-bold uppercase">${evento.Mes}</span>
+                        <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-lista-azul slide-up flex flex-col gap-4 mb-4 relative">
+                            
+                            <button onclick="borrarEvento('${evento.id}')" class="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition-colors" title="Borrar evento">
+                                <i class="fa-solid fa-trash text-lg"></i>
+                            </button>
+
+                            <div class="flex gap-4 pr-6"> <div class="flex flex-col items-center justify-center bg-blue-50 text-lista-azul rounded-lg p-3 min-w-[70px] h-fit">
+                                    <span class="text-xs font-bold uppercase tracking-wider">${evento.Mes.substring(0, 3)}</span>
                                     <span class="text-2xl font-black">${evento.Dia}</span>
                                 </div>
                                 <div class="flex-1">
@@ -287,14 +307,18 @@
         }
 
         // ==========================================
-        // 2. GUARDAR UN EVENTO NUEVO EN LA BASE
+        // GUARDAR UN EVENTO NUEVO
         // ==========================================
         document.getElementById('form-evento').addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const btnSubmit = document.querySelector('#form-evento button[type="submit"]');
 
+            // Generamos un ID único usando la fecha y hora exacta (DNI del evento)
+            const idUnico = "EV-" + Date.now();
+
             const nuevoEvento = {
+                id: idUnico,  // <--- Acá se guarda el ID en el Excel
                 Mes: document.getElementById('ev-mes').value,
                 Dia: document.getElementById('ev-dia').value,
                 Hora: document.getElementById('ev-hora').value,
@@ -335,7 +359,7 @@
             }
         });
 
-        // Ejecutar al entrar a la página
+        // Ejecutar al entrar
         cargarEventos();
     </script>
 </body>
